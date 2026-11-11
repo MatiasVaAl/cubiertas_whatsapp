@@ -3,620 +3,777 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Prototipo | Asistente Mueblería</title>
+    <title>Simulador | Asistente virtual de WhatsApp para cubiertas postformadas</title>
     <style>
       :root {
-        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-        color: #172b25;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #111b21;
+        --wa-head: #008069;
+        --wa-green: #00a884;
+        --wa-out: #d9fdd3;
+        --wa-bg: #efeae2;
+        --line: #dfe6e0;
       }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #e6ecea; min-height: 100vh; padding: 16px; }
+      button { font: inherit; cursor: pointer; }
+      .layout { display: grid; gap: 16px; max-width: 1120px; margin: 0 auto; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: start; justify-content: center; }
+      @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
-      * {
-        box-sizing: border-box;
-      }
+      /* ---------- Teléfono ---------- */
+      .phone { position: relative; height: min(800px, calc(100dvh - 60px)); min-height: 540px; display: flex; flex-direction: column; background: var(--wa-bg); border-radius: 22px; overflow: hidden; box-shadow: 0 14px 45px #193b2c30; border: 6px solid #111b21; }
+      .wa-head { background: var(--wa-head); color: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+      .wa-head .back { font-size: 20px; opacity: .9; }
+      .avatar { width: 40px; height: 40px; border-radius: 50%; background: #d5f3ea; display: grid; place-items: center; flex: none; }
+      .wa-head .who { min-width: 0; flex: 1; line-height: 1.2; }
+      .wa-head strong { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .wa-head small { font-size: 12px; color: #d4ece4; }
+      .wa-head .icons { display: flex; gap: 14px; font-size: 18px; opacity: .9; }
+      .chat { flex: 1; overflow-y: auto; padding: 10px 10px 14px; display: flex; flex-direction: column; gap: 4px;
+        background-color: var(--wa-bg);
+        background-image: radial-gradient(#d9d2c5 1px, transparent 1.2px), radial-gradient(#e2dccf 1px, transparent 1.2px);
+        background-size: 22px 22px, 22px 22px; background-position: 0 0, 11px 11px; }
+      .chip-date, .chip-note { align-self: center; font-size: 12px; background: #fff; color: #54656f; padding: 4px 10px; border-radius: 8px; box-shadow: 0 1px 0 #0001; margin: 4px 0; }
+      .chip-note { background: #fff5c4; max-width: 90%; text-align: center; }
+      .msg { display: flex; flex-direction: column; gap: 3px; max-width: 84%; margin-top: 3px; }
+      .msg.in { align-self: flex-start; }
+      .msg.out { align-self: flex-end; align-items: flex-end; }
+      .bubble { position: relative; padding: 6px 8px 4px 9px; border-radius: 8px; font-size: 14.2px; line-height: 1.35; box-shadow: 0 1px 0 #0002; overflow-wrap: anywhere; white-space: pre-line; min-width: 70px; }
+      .in .bubble { background: #fff; border-top-left-radius: 0; }
+      .out .bubble { background: var(--wa-out); border-top-right-radius: 0; }
+      .meta { float: right; margin: 6px 0 -2px 10px; font-size: 11px; color: #667781; display: inline-flex; gap: 3px; align-items: center; }
+      .ticks { letter-spacing: -3px; font-weight: 700; color: #8696a0; }
+      .ticks.read { color: #53bdeb; }
+      .bubble.media { padding: 3px; }
+      .bubble.media img, .bubble .hdr img { display: block; width: 100%; border-radius: 6px; }
+      .bubble.media .cap { padding: 5px 6px 2px; }
+      .bubble .hdr { margin: -3px -5px 5px; }
+      .bubble .foot { font-size: 12.5px; color: #667781; margin-top: 4px; }
+      .pills { display: flex; flex-direction: column; gap: 3px; width: 100%; min-width: 230px; }
+      .pills button { background: #fff; color: #027eb5; border: 0; border-radius: 8px; padding: 10px; font-weight: 600; font-size: 14px; box-shadow: 0 1px 0 #0002; }
+      .pills button:hover { background: #f3f8fb; }
+      .loc { width: 250px; }
+      .loc svg { display: block; width: 100%; border-radius: 6px 6px 0 0; }
+      .loc .info { padding: 6px 4px 2px; }
+      .composer { display: flex; align-items: center; gap: 6px; padding: 6px 8px 8px; background: #f0f2f5; }
+      .composer .field { flex: 1; min-width: 0; border: 0; border-radius: 22px; padding: 10px 14px; font: inherit; font-size: 15px; background: #fff; }
+      .composer .field:focus { outline: 2px solid #00a88455; }
+      .composer .ico { font-size: 19px; color: #54656f; padding: 0 3px; }
+      .composer .send { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--wa-green); color: #fff; font-size: 17px; flex: none; }
 
-      body {
-        margin: 0;
-        background: #e9efec;
-        display: grid;
-        place-items: center;
-        min-height: 100vh;
-      }
+      .sheet-backdrop { position: absolute; inset: 0; background: #0008; display: flex; align-items: flex-end; z-index: 5; }
+      .sheet-backdrop[hidden] { display: none; }
+      .sheet { background: #fff; width: 100%; max-height: 86%; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 12px 14px 16px; }
+      .sheet header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .sheet header strong { flex: 1; font-size: 16px; }
+      .sheet header button { border: 0; background: none; font-size: 20px; color: #54656f; }
+      .row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 4px; border-bottom: 1px solid #eef1ef; cursor: pointer; }
+      .row input { margin-top: 4px; accent-color: var(--wa-green); }
+      .row .t { font-size: 15px; }
+      .row .d { font-size: 12.5px; color: #667781; }
+      .sec { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #00a884; margin: 10px 0 0; font-weight: 700; }
+      .cta { width: 100%; margin-top: 12px; border: 0; border-radius: 22px; padding: 12px; background: var(--wa-green); color: #fff; font-weight: 700; }
+      .cta:disabled { background: #c5ccd0; cursor: not-allowed; }
+      .flow label { display: block; font-size: 13px; color: #3b4a54; margin-top: 10px; }
+      .flow input, .flow select { width: 100%; margin-top: 4px; padding: 10px; border: 1px solid #c9d3cd; border-radius: 8px; font: inherit; }
+      .flow small { color: #667781; font-size: 12px; }
+      .phone-foot { text-align: center; font-size: 12px; color: #53685c; margin: 8px 0 0; }
 
-      .phone {
-        width: min(100%, 470px);
-        height: min(850px, 100dvh);
-        display: flex;
-        flex-direction: column;
-        background: #f5f2ea;
-        box-shadow: 0 14px 45px #193b2c30;
-      }
-
-      .head {
-        background: #075e4a;
-        color: white;
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .avatar {
-        border-radius: 50%;
-        background: #cce8dc;
-        color: #075e4a;
-        padding: 10px;
-        font-weight: 800;
-      }
-
-      .head small {
-        display: block;
-        color: #d0e6dc;
-      }
-
-      .messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 18px 13px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        background: linear-gradient(#f5f2eadd, #f5f2eadd),
-          repeating-linear-gradient(35deg, #e4e8de 0 2px, transparent 2px 45px);
-      }
-
-      .bubble {
-        max-width: 87%;
-        padding: 11px 13px;
-        border-radius: 13px;
-        line-height: 1.45;
-        font-size: 14px;
-        white-space: pre-line;
-        box-shadow: 0 1px 3px #0001;
-      }
-
-      .bot {
-        align-self: flex-start;
-        background: white;
-        border-top-left-radius: 3px;
-      }
-
-      .me {
-        align-self: flex-end;
-        background: #d8f8dd;
-        border-top-right-radius: 3px;
-      }
-
-      .actions {
-        padding: 10px 12px;
-        background: #fff;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        border-top: 1px solid #dfe6e0;
-        max-height: 235px;
-        overflow-y: auto;
-      }
-
-      .chat-form {
-        display: flex;
-        gap: 8px;
-        padding: 10px 12px;
-        background: #fff;
-        border-top: 1px solid #dfe6e0;
-      }
-
-      .chat-form .field {
-        min-width: 0;
-      }
-
-      button {
-        border: 1px solid #a8d1c0;
-        border-radius: 18px;
-        padding: 10px 12px;
-        background: #effaf4;
-        color: #075e4a;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      button:hover {
-        background: #d7f2e3;
-      }
-
-      .map-link {
-        display: inline-block;
-        border: 1px solid #a8d1c0;
-        border-radius: 18px;
-        padding: 10px 12px;
-        background: #effaf4;
-        color: #075e4a;
-        font-weight: 600;
-        text-decoration: none;
-      }
-
-      .map-link:hover {
-        background: #d7f2e3;
-      }
-
-      button.primary {
-        background: #087b5b;
-        color: white;
-      }
-
-      .foot {
-        padding: 10px 14px;
-        font-size: 11px;
-        text-align: center;
-        background: #fff;
-        color: #65766e;
-      }
-
-      .field {
-        width: 100%;
-        padding: 11px;
-        border: 1px solid #b8cbc2;
-        border-radius: 9px;
-        font: inherit;
-      }
-
-      .form {
-        display: grid;
-        gap: 8px;
-        width: 100%;
-      }
-
-      .hint {
-        font-size: 12px;
-        color: #53685c;
-      }
-
-      .reset {
-        margin-left: auto;
-        background: #ffffff20;
-        border-color: #ffffff70;
-        color: white;
-        padding: 7px 10px;
-      }
-
-      @media (min-width: 600px) {
-        .phone {
-          border-radius: 18px;
-          overflow: hidden;
-          margin: 20px;
-        }
-      }
+      /* ---------- Panel ---------- */
+      .panel { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 14px 45px #193b2c18; }
+      .panel h2 { margin: 0 0 4px; font-size: 18px; }
+      .panel h3 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #4b6258; }
+      .panel p { margin: 0; font-size: 13px; color: #53685c; }
+      .controls { display: grid; gap: 8px; margin-top: 12px; font-size: 14px; }
+      .controls label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .controls select { padding: 6px 8px; border-radius: 8px; border: 1px solid #c9d3cd; font: inherit; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { border: 1px solid #a8d1c0; border-radius: 16px; padding: 7px 12px; background: #effaf4; color: #075e4a; font-weight: 600; font-size: 13px; }
+      .chip:hover { background: #d7f2e3; }
+      .chip[hidden] { display: none; }
+      .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 16px; flex-wrap: wrap; }
+      .tabs button { border: 0; background: none; padding: 8px 12px; font-weight: 600; color: #53685c; border-bottom: 3px solid transparent; }
+      .tabs button[aria-selected="true"] { color: #075e4a; border-color: var(--wa-green); }
+      .tab { margin-top: 10px; }
+      .tab[hidden] { display: none; }
+      .log { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; font: 12px/1.5 ui-monospace, Consolas, monospace; border: 1px solid var(--line); border-radius: 8px; }
+      .log li { padding: 3px 8px; border-bottom: 1px solid #f0f3f1; }
+      .ok { color: #0a6b4f; } .warn { color: #8a5a00; } .err { color: #b3261e; }
+      .api { max-height: 420px; overflow-y: auto; display: grid; gap: 6px; }
+      .api details { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; }
+      .api summary { cursor: pointer; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+      .api pre { margin: 6px 0 0; padding: 8px; background: #f6f8f7; border-radius: 6px; overflow-x: auto; font: 11.5px/1.45 ui-monospace, Consolas, monospace; max-height: 260px; }
+      .badge { font-size: 11px; border-radius: 10px; padding: 1px 8px; font-weight: 700; }
+      .badge.in { background: #e3f2fd; color: #0b5394; } .badge.out { background: #e8f5e9; color: #1b5e20; }
+      .badge.okc { background: #e8f5e9; color: #1b5e20; } .badge.new { background: #fff3cd; color: #7a5b00; } .badge.bad { background: #fde7e9; color: #b3261e; }
+      .state { margin: 0; padding: 10px; background: #f6f8f7; border: 1px solid var(--line); border-radius: 8px; font: 12px/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; }
+      .advisor { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+      .advisor li { white-space: pre-line; font-size: 13px; background: #fff8e1; border: 1px solid #f1dfa6; border-radius: 8px; padding: 8px 10px; }
+      .reply-form { display: flex; gap: 6px; flex-wrap: wrap; }
+      .reply-form input { flex: 1; min-width: 180px; padding: 8px 10px; border: 1px solid #c9d3cd; border-radius: 8px; font: inherit; }
+      .btn { border: 1px solid #a8d1c0; background: #effaf4; color: #075e4a; border-radius: 8px; padding: 8px 12px; font-weight: 600; }
+      .empty { font-size: 13px; color: #7a8a82; }
+      .empty[hidden] { display: none; }
     </style>
   </head>
 
   <body>
-    <main class="phone">
-      <header class="head">
-        <div class="avatar">M</div>
-        <div>
-          <strong>Asistente de Mueblería</strong>
-          <small>Demostración académica · Temuco</small>
+    <div class="layout">
+      <main>
+        <div class="phone" id="phone">
+          <header class="wa-head">
+            <span class="back" aria-hidden="true">←</span>
+            <div class="avatar" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 28 28"><rect x="5" y="9" width="18" height="13" rx="5" fill="#008069"/><circle cx="10.5" cy="15" r="2" fill="#fff"/><circle cx="17.5" cy="15" r="2" fill="#fff"/><rect x="13" y="4" width="2" height="5" fill="#008069"/><circle cx="14" cy="4" r="2" fill="#008069"/></svg>
+            </div>
+            <div class="who">
+              <strong>Cubiertas Postformadas Temuco</strong>
+              <small id="presence">en línea</small>
+            </div>
+            <div class="icons" aria-hidden="true"><span>📹</span><span>📞</span><span>⋮</span></div>
+          </header>
+
+          <section class="chat" id="chat" aria-live="polite" aria-label="Conversación de WhatsApp"></section>
+
+          <form class="composer" id="chatForm">
+            <span class="ico" aria-hidden="true">😊</span>
+            <input class="field" id="chatInput" autocomplete="off" aria-label="Escribe un mensaje" placeholder="Mensaje" />
+            <span class="ico" aria-hidden="true">📎</span>
+            <button class="send" id="sendBtn" type="submit" aria-label="Enviar">🎙</button>
+          </form>
+
+          <div class="sheet-backdrop" id="sheetBackdrop" hidden>
+            <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+          </div>
         </div>
-        <button class="reset" id="restart">Reiniciar</button>
-      </header>
+        <p class="phone-foot">Simulación local · No está conectada a WhatsApp · Precios ficticios</p>
+      </main>
 
-      <section class="messages" id="messages" aria-live="polite"></section>
-      <section class="actions" id="actions" aria-label="Opciones de conversación"></section>
-      <form class="chat-form" id="chatForm">
-        <input class="field" id="chatInput" autocomplete="off" aria-label="Escribe un mensaje" placeholder="Escribe una opción o /asesor" />
-        <button class="primary" type="submit">Enviar</button>
-      </form>
+      <aside class="panel" aria-label="Detrás de escena">
+        <h2>Detrás de escena</h2>
+        <p>Cada mensaje se genera como el JSON real de la WhatsApp Cloud API y se valida contra sus límites antes de mostrarse en el teléfono.</p>
 
-      <footer class="foot">Prototipo simulado · No conectado a WhatsApp · Valores ficticios</footer>
-    </main>
+        <div class="controls">
+          <label>Versión del asistente:
+            <select id="modeSel">
+              <option value="proposal">Propuesta del storyboard (completa)</option>
+              <option value="backend">Backend actual (solo lo ya implementado)</option>
+            </select>
+          </label>
+          <label id="flowRow"><input type="checkbox" id="flowToggle" checked /> Medidas con formulario (WhatsApp Flow) en vez de pregunta por pregunta</label>
+          <label><input type="checkbox" id="quotesToggle" checked /> <code>QUOTES_ENABLED</code> activado (precios visibles)</label>
+        </div>
+
+        <h3>Escenarios de demo</h3>
+        <div class="chips">
+          <button class="chip" type="button" data-scenario="quote">Cotización completa</button>
+          <button class="chip" type="button" data-scenario="special">Pedido especial (&gt; 3,66 m)</button>
+          <button class="chip" type="button" data-scenario="lab">Mesón de laboratorio</button>
+          <button class="chip" data-prop type="button" data-scenario="catalog">Ver catálogo</button>
+          <button class="chip" data-prop type="button" data-scenario="measures">Cómo medir</button>
+          <button class="chip" data-prop type="button" data-scenario="location">Ubicación</button>
+          <button class="chip" data-prop type="button" data-scenario="faq">Preguntas frecuentes</button>
+          <button class="chip" type="button" id="dupBtn">Mensaje duplicado de Meta</button>
+          <button class="chip" type="button" id="restart">Reiniciar chat</button>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-tab="events">Eventos</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="api">API de WhatsApp</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="session">Sesión</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="advisor">Asesor</button>
+        </div>
+
+        <div class="tab" id="tab-events"><ol class="log" id="log" aria-live="off"></ol></div>
+        <div class="tab" id="tab-api" hidden>
+          <p style="margin-bottom:8px">Verde = ya existe en <code>whatsapp.js</code>. Amarillo = funcionalidad propuesta que hay que agregar al backend.</p>
+          <div class="api" id="api"></div>
+        </div>
+        <div class="tab" id="tab-session" hidden><pre class="state" id="state"></pre></div>
+        <div class="tab" id="tab-advisor" hidden>
+          <ul class="advisor" id="advisor"></ul>
+          <p class="empty" id="advisorEmpty">Sin solicitudes todavía.</p>
+          <h3>Responder como asesor</h3>
+          <form class="reply-form" id="advisorForm">
+            <input id="advisorInput" autocomplete="off" aria-label="Respuesta del asesor" placeholder="Yo te ayudaré con los detalles de tu pedido." />
+            <button class="btn" type="submit">Enviar al cliente</button>
+            <button class="btn" type="button" id="returnBot">Devolver al bot</button>
+          </form>
+        </div>
+      </aside>
+    </div>
 
     <script>
-      const messages = document.querySelector('#messages');
-      const actions = document.querySelector('#actions');
-      const chatForm = document.querySelector('#chatForm');
-      const chatInput = document.querySelector('#chatInput');
+      const FAST = new URLSearchParams(location.search).has('fast');
+      const $ = (selector) => document.querySelector(selector);
+      const chatEl = $('#chat');
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, FAST ? 0 : ms));
+      const pad = (n) => String(n).padStart(3, '0');
+      const timeNow = () => new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      const money = (amount) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
+      const clp = (amount) => amount.toLocaleString('es-CL');
+      const fmtNum = (value) => String(value).replace('.', ',');
+      const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const fmt = (text) => esc(text).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/(^|[\s(])_([^_\n]+)_(?=[\s.,)]|$)/g, '$1<i>$2</i>');
 
-      const money = (n) =>
-        new Intl.NumberFormat('es-CL', {
-          style: 'currency',
-          currency: 'CLP',
-          maximumFractionDigits: 0,
-        }).format(n);
-
+      const CUSTOMER = '56912345678';
       const MAX_AUTOMATIC_METERS = 3.66;
       const QUOTE_VALIDITY_DAYS = 15;
-      let selectedProduct = null;
-      let step = 'menu';
+      const FLOW_ID = 'FLOW_ID_DE_EJEMPLO';
 
-      // Valores de demostración: reemplazar por la lista de precios aprobada por el negocio.
-      const catalogProducts = [
-        {
-          id: 'mdf-blanco',
-          name: 'Cubierta postformada blanca',
-          material: 'MDF',
-          finish: 'Blanco liso',
-          pricePerMeter: 39990,
-          visual: '⬜',
-          technicalSheet: 'MDF con laminado decorativo blanco. Ficha técnica por confirmar con el taller.',
-        },
-        {
-          id: 'mdf-madera',
-          name: 'Cubierta postformada madera',
-          material: 'MDF',
-          finish: 'Textura madera',
-          pricePerMeter: 44990,
-          visual: '🪵',
-          technicalSheet: 'MDF con laminado decorativo tipo madera. Ficha técnica por confirmar con el taller.',
-        },
-        {
-          id: 'mdf-grafito',
-          name: 'Cubierta postformada grafito',
-          material: 'MDF',
-          finish: 'Grafito',
-          pricePerMeter: 46990,
-          visual: '⬛',
-          technicalSheet: 'MDF con laminado decorativo grafito. Ficha técnica por confirmar con el taller.',
-        },
+      const proposal = () => $('#modeSel').value === 'proposal';
+      const useFlow = () => proposal() && $('#flowToggle').checked;
+      const quotesEnabled = () => $('#quotesToggle').checked;
+
+      // ---------- Catálogo (catalog.js + un producto extra del storyboard) ----------
+      const allProducts = [
+        { id: 'mdf-blanco', name: 'Cubierta postformada blanca', material: 'MDF', finish: 'Blanco liso', pricePerMeter: 39990, technicalSheet: 'MDF con laminado decorativo blanco. Ficha técnica por confirmar con el taller.' },
+        { id: 'mdf-madera', name: 'Cubierta postformada madera', material: 'MDF', finish: 'Textura madera', pricePerMeter: 44990, technicalSheet: 'MDF con laminado decorativo tipo madera. Ficha técnica por confirmar con el taller.' },
+        { id: 'mdf-grafito', name: 'Cubierta postformada grafito', material: 'MDF', finish: 'Grafito', pricePerMeter: 46990, technicalSheet: 'MDF con laminado decorativo grafito. Ficha técnica por confirmar con el taller.' },
+        { id: 'mdf-granito', name: 'Cubierta postformada blanco granito', material: 'MDF', finish: 'Blanco granito', pricePerMeter: 42990, technicalSheet: 'MDF con laminado decorativo blanco granito. Ficha técnica por confirmar con el taller.', demo: true },
       ];
-
+      const products = () => allProducts.filter((p) => proposal() || !p.demo);
+      const getProduct = (id) => products().find((p) => p.id === id) ?? null;
       const addOnPrices = {
         cut45: { label: 'Corte a 45°', unitPrice: 5000 },
         edgeBanding: { label: 'Pegado de cenefa', unitPrice: 3500 },
         perforation: { label: 'Perforación para lavaplatos/encimera', unitPrice: 8000 },
       };
 
-      function calculateQuote(product, meters, cantidad_cortes_45, cantidad_perforaciones, cantidad_pegados_cenefa = 0) {
-        if (!product || !Number.isFinite(product.pricePerMeter) || product.pricePerMeter < 0) {
-          throw new TypeError('Selecciona un producto válido del catálogo.');
-        }
-        if (!Number.isFinite(meters) || meters <= 0) {
-          throw new RangeError('Los metros deben ser un número mayor que cero.');
-        }
-
-        [
-          ['cortes a 45°', cantidad_cortes_45],
-          ['perforaciones', cantidad_perforaciones],
-          ['pegados de cenefa', cantidad_pegados_cenefa],
-        ].forEach(([label, quantity]) => {
-          if (!Number.isInteger(quantity) || quantity < 0) {
-            throw new RangeError(`La cantidad de ${label} debe ser un entero igual o mayor que cero.`);
-          }
-        });
-
+      function assertCount(label, value) {
+        if (!Number.isInteger(value) || value < 0) throw new RangeError(`La cantidad de ${label} debe ser un entero igual o mayor que cero.`);
+      }
+      function calculateQuote(product, meters, cuts45, perforations, edgeBanding = 0, now = new Date()) {
+        if (!product) throw new TypeError('Selecciona un producto válido del catálogo.');
+        if (!Number.isFinite(meters) || meters <= 0) throw new RangeError('Los metros deben ser un número mayor que cero.');
+        assertCount('cortes a 45°', cuts45); assertCount('perforaciones', perforations); assertCount('pegados de cenefa', edgeBanding);
         const lines = [
-          {
-            description: `${product.name} (${meters} m × ${money(product.pricePerMeter)}/m)`,
-            quantity: meters,
-            unitPrice: product.pricePerMeter,
-            total: Math.round(meters * product.pricePerMeter),
-          },
-          {
-            description: addOnPrices.cut45.label,
-            quantity: cantidad_cortes_45,
-            unitPrice: addOnPrices.cut45.unitPrice,
-            total: cantidad_cortes_45 * addOnPrices.cut45.unitPrice,
-          },
-          {
-            description: addOnPrices.edgeBanding.label,
-            quantity: cantidad_pegados_cenefa,
-            unitPrice: addOnPrices.edgeBanding.unitPrice,
-            total: cantidad_pegados_cenefa * addOnPrices.edgeBanding.unitPrice,
-          },
-          {
-            description: addOnPrices.perforation.label,
-            quantity: cantidad_perforaciones,
-            unitPrice: addOnPrices.perforation.unitPrice,
-            total: cantidad_perforaciones * addOnPrices.perforation.unitPrice,
-          },
+          { description: `${product.name} (${fmtNum(meters)} m × ${money(product.pricePerMeter)}/m)`, total: Math.round(meters * product.pricePerMeter) },
+          { description: addOnPrices.cut45.label, total: cuts45 * addOnPrices.cut45.unitPrice },
+          { description: addOnPrices.edgeBanding.label, total: edgeBanding * addOnPrices.edgeBanding.unitPrice },
+          { description: addOnPrices.perforation.label, total: perforations * addOnPrices.perforation.unitPrice },
         ];
-
-        return {
-          product,
-          meters,
-          lines,
-          total: lines.reduce((sum, line) => sum + line.total, 0),
-          currency: 'CLP',
-          validForDays: QUOTE_VALIDITY_DAYS,
-        };
+        const validUntil = new Date(now); validUntil.setDate(validUntil.getDate() + QUOTE_VALIDITY_DAYS);
+        return { product, lines, total: lines.reduce((sum, l) => sum + l.total, 0), validUntil };
+      }
+      function formatQuote(quote, extra = {}) {
+        const rich = proposal();
+        const bold = (t) => (rich ? `*${t}*` : t);
+        const breakdown = quote.lines.map((l) => `• ${l.description}: ${money(l.total)}`).join('\n');
+        return [
+          bold('PRE-COTIZACIÓN REFERENCIAL'),
+          rich ? `${quote.product.name} · ${quote.product.material} · ${quote.product.finish}` : quote.product.name,
+          ...(extra.width ? [`Largo: ${fmtNum(extra.meters)} m · Ancho: ${extra.width} cm`] : []),
+          '', breakdown, '',
+          bold(`TOTAL: ${money(quote.total)} CLP`),
+          `Válida hasta: ${quote.validUntil.toLocaleDateString('es-CL')}`, '',
+          'Valores referenciales; disponibilidad, medidas y precio final deben confirmarse con el taller.',
+        ].join('\n');
       }
 
-      function say(text, who = 'bot') {
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble ' + who;
-        bubble.textContent = text;
-        messages.appendChild(bubble);
-        messages.scrollTop = messages.scrollHeight;
-      }
-
-      function clear() {
-        actions.replaceChildren();
-      }
-
-      function btn(label, fn, primary = false) {
-        const button = document.createElement('button');
-        button.textContent = label;
-
-        if (primary) {
-          button.className = 'primary';
-        }
-
-        button.onclick = () => {
-          say(label, 'me');
-          fn();
-        };
-
-        actions.appendChild(button);
-      }
-
-      function back() {
-        btn('↩ Menú principal', menu);
-      }
-
-      function menu() {
-        step = 'menu';
-        clear();
-        say('¡Hola! 👋 Soy el asistente virtual de nuestra mueblería. ¿En qué puedo ayudarte?');
-        btn('🪑 Ver catálogo', catalog);
-        btn('🧮 Solicitar precotización', quote);
-        btn('❓ Preguntas frecuentes', faq);
-        btn('📍 Ubicación', locationInfo);
-        btn('👤 Atención humana', human);
-      }
-
-      function showProductOptions(message = 'Paso 1 de 3 · Elige el tipo de cubierta y terminación:') {
-        step = 'material';
-        clear();
-        say(message);
-        catalogProducts.forEach((product, index) => {
-          btn(`${product.visual} ${index + 1}. ${product.name} · ${money(product.pricePerMeter)}/m`, () => {
-            selectedProduct = product;
-            say(`${product.name} · Material: ${product.material} · Terminación: ${product.finish}\n${product.technicalSheet}`);
-            showDimensions();
-          });
-        });
-        back();
-      }
-
-      function catalog() {
-        clear();
-        say('Catálogo de demostración. Selecciona una terminación para ver su ficha y continuar con la precotización:');
-        catalogProducts.forEach((product) => {
-          btn(`${product.visual} ${product.name} · ${product.finish}`, () => {
-            selectedProduct = product;
-            say(`${product.name}\nMaterial: ${product.material}\nTerminación: ${product.finish}\nPrecio referencial: ${money(product.pricePerMeter)}/m\n${product.technicalSheet}`);
-            showDimensions();
-          });
-        });
-        back();
-      }
-
-      function paymentInfo(method, price, size) {
-        clear();
-
-        if (method === 'transferencia') {
-          say(
-            `Elegiste pagar con transferencia.\nTamaño del pedido: ${size}.\nTotal de referencia: ${money(price)} CLP.\n\n` +
-              'DATOS DE TRASFERENCIA\n' +
-              'Banco: Banco Estado \n' +
-              'Titular: "Nombre del cliente"\n' +
-              'RUT: 00.000.000-0\n' +
-              'Tipo de cuenta: Cuenta vista\n' +
-              'Número de cuenta: 000000000'
-          );
+      // ---------- Imágenes de producto generadas (simulan los archivos IMAGE_* del backend) ----------
+      function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+      const SLABS = {
+        'mdf-blanco': { top: '#f6f6f3', edge: '#d3d3cc', deco: 'speck', c: ['#dedfd9', '#e9e9e4'] },
+        'mdf-madera': { top: '#b9834f', edge: '#8a5c33', deco: 'grain', c: ['#9a6a3c', '#cf9d68'] },
+        'mdf-grafito': { top: '#5a5f65', edge: '#3b3f44', deco: 'speck', c: ['#4a4e53', '#70757b'] },
+        'mdf-granito': { top: '#ecebe7', edge: '#c8c5be', deco: 'speck', c: ['#9a9893', '#c0beb8', '#5e5c58', '#d6d3cc'] },
+      };
+      const slabCache = {};
+      function slabImage(id) {
+        if (slabCache[id]) return slabCache[id];
+        const s = SLABS[id]; const r = rng(id.length * 131 + id.charCodeAt(id.length - 1));
+        const P1 = [30, 100], P2 = [230, 40], P4 = [95, 135], P3 = [295, 75];
+        const pt = (u, v) => [P1[0] + u * (P2[0] - P1[0]) + v * (P4[0] - P1[0]), P1[1] + u * (P2[1] - P1[1]) + v * (P4[1] - P1[1])].map((n) => n.toFixed(1)).join(' ');
+        let deco = '';
+        if (s.deco === 'grain') {
+          for (let i = 0; i < 18; i++) { const v = i / 17; deco += `<path d="M${pt(0, v)} Q${pt(0.5, v + (r() - 0.5) * 0.12)} ${pt(1, v)}" stroke="${s.c[i % 2]}" stroke-width="${(0.6 + r() * 1.4).toFixed(1)}" fill="none" opacity=".75"/>`; }
         } else {
-          say(
-            `Elegiste pagar en efectivo.\nTamaño del pedido: ${size}.\nTotal de referencia: ${money(price)} CLP.\n\n` +
-              'Puedes dirigirte al local para realizar el pago.'
-          );
+          const n = s.c.length > 2 ? 170 : 90;
+          for (let i = 0; i < n; i++) { const [x, y] = pt(r(), r()).split(' '); deco += `<circle cx="${x}" cy="${y}" r="${(0.5 + r() * 1.4).toFixed(1)}" fill="${s.c[Math.floor(r() * s.c.length)]}" opacity=".8"/>`; }
         }
+        const poly = (a) => a.map((p) => p.join(',')).join(' ');
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f4f2"/><stop offset="1" stop-color="#d9e0dc"/></linearGradient><clipPath id="c"><polygon points="${poly([P1, P2, P3, P4])}"/></clipPath></defs><rect width="320" height="200" fill="url(#g)"/><ellipse cx="170" cy="150" rx="140" ry="16" fill="#0002"/><polygon points="${poly([P4, P3, [295, 93], [95, 153]])}" fill="${s.edge}"/><polygon points="${poly([P1, P4, [95, 153], [30, 118]])}" fill="${s.edge}" opacity=".85"/><polygon points="${poly([P1, P2, P3, P4])}" fill="${s.top}"/><g clip-path="url(#c)">${deco}</g></svg>`;
+        return (slabCache[id] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg));
+      }
+      const imgLink = (product) => `https://tu-dominio.cl/img/${product.id}.jpg`;
+      const imgSrc = (link) => { const m = /\/img\/([\w-]+)\.jpg$/.exec(link); return m && SLABS[m[1]] ? slabImage(m[1]) : ''; };
+      const mapSvg = '<svg viewBox="0 0 250 110" xmlns="http://www.w3.org/2000/svg"><rect width="250" height="110" fill="#e6efe3"/><path d="M0 70 L250 40" stroke="#fff" stroke-width="9"/><path d="M90 0 L120 110" stroke="#fff" stroke-width="7"/><path d="M0 20 L250 95" stroke="#f3efe3" stroke-width="5"/><rect x="150" y="55" width="50" height="30" fill="#cfe3c8"/><path d="M125 62c-8 0-14 6-14 14 0 10 14 24 14 24s14-14 14-24c0-8-6-14-14-14z" fill="#e53935"/><circle cx="125" cy="76" r="5" fill="#fff"/></svg>';
 
-        const mapLink = document.createElement('a');
-        mapLink.className = 'map-link';
-        mapLink.href = 'https://www.google.com/maps/place/Cubiertas+Postformadas+Temuco/@-38.742235,-72.5778153,17z/data=!4m16!1m9!3m8!1s0x9614d38f70d31b6d:0x42c57fc315ccaf97!2sCubiertas+Postformadas+Temuco!8m2!3d-38.742235!4d-72.5778153!9m1!1b1!16s%2Fg%2F11gl20pj7b!3m5!1s0x9614d38f70d31b6d:0x42c57fc315ccaf97!8m2!3d-38.742235!4d-72.5778153!16s%2Fg%2F11gl20pj7b?entry=ttu&g_ep=EgoyMDI2MTAyMC4wIKXMDSoASAFQAw%3D%3D';
-        mapLink.target = '_blank';
-        mapLink.rel = 'noopener noreferrer';
-        mapLink.textContent = '📍 Ver ubicación en Google Maps';
-        actions.appendChild(mapLink);
+      // ---------- Mensajes de la Cloud API: constructores y validación ----------
+      const msg = {
+        text: (body) => ({ type: 'text', text: { body } }),
+        image: (link, caption) => ({ type: 'image', image: { link, caption } }),
+        buttons: (body, buttons, { header, footer } = {}) => ({ type: 'interactive', interactive: { type: 'button', ...(header ? { header } : {}), body: { text: body }, ...(footer ? { footer: { text: footer } } : {}), action: { buttons: buttons.map(({ id, title }) => ({ type: 'reply', reply: { id, title } })) } } }),
+        list: (body, button, sections, { header, footer } = {}) => ({ type: 'interactive', interactive: { type: 'list', ...(header ? { header: { type: 'text', text: header } } : {}), body: { text: body }, ...(footer ? { footer: { text: footer } } : {}), action: { button, sections } } }),
+        location: (latitude, longitude, name, address) => ({ type: 'location', location: { latitude, longitude, name, address } }),
+        flow: (body, cta, footer) => ({ type: 'interactive', interactive: { type: 'flow', body: { text: body }, ...(footer ? { footer: { text: footer } } : {}), action: { name: 'flow', parameters: { flow_message_version: '3', flow_token: `ft_${Date.now().toString(36)}`, flow_id: FLOW_ID, flow_cta: cta, flow_action: 'navigate', flow_action_payload: { screen: 'MEDIDAS' } } } } }),
+      };
 
-        btn('🧮 Otra precotización', quote);
-        back();
+      function validate(p) {
+        const over = (v, max, label) => (v != null && String(v).length > max ? `${label} supera los ${max} caracteres (${String(v).length})` : null);
+        if (p.type === 'text') return p.text.body ? over(p.text.body, 4096, 'text.body') : 'text.body no puede estar vacío';
+        if (p.type === 'image') return over(p.image.caption, 1024, 'image.caption');
+        if (p.type !== 'interactive') return null;
+        const i = p.interactive;
+        if (i.type === 'button') {
+          const b = i.action.buttons;
+          if (b.length < 1 || b.length > 3) return 'reply buttons: se permiten de 1 a 3 botones';
+          if (new Set(b.map((x) => x.reply.title)).size !== b.length) return 'reply buttons: los títulos deben ser únicos';
+          for (const x of b) { const e = over(x.reply.title, 20, 'título de botón') ?? over(x.reply.id, 256, 'id de botón'); if (e) return e; }
+          return over(i.body.text, 1024, 'body') ?? over(i.footer?.text, 60, 'footer');
+        }
+        if (i.type === 'list') {
+          const rows = i.action.sections.flatMap((s) => s.rows);
+          if (rows.length < 1 || rows.length > 10) return `list: se permiten hasta 10 filas en total (hay ${rows.length})`;
+          if (i.action.sections.length > 1 && i.action.sections.some((s) => !s.title)) return 'list: con más de una sección, todas requieren título';
+          for (const s of i.action.sections) { const e = over(s.title, 24, 'título de sección'); if (e) return e; }
+          for (const r of rows) { const e = over(r.title, 24, 'título de fila') ?? over(r.description, 72, 'descripción de fila') ?? over(r.id, 200, 'id de fila'); if (e) return e; }
+          return over(i.action.button, 20, 'texto del botón de lista') ?? over(i.body.text, 4096, 'body') ?? over(i.header?.text, 60, 'header') ?? over(i.footer?.text, 60, 'footer');
+        }
+        if (i.type === 'flow') return over(i.action.parameters.flow_cta, 30, 'flow_cta') ?? over(i.body.text, 1024, 'body');
+        return null;
       }
 
-      function faq() {
-        step = 'faq';
-        clear();
-        say('Selecciona tu consulta:');
-
-        btn('Materiales', () => {
-          clear();
-          say('Podemos orientar sobre melamina y MDF. La disponibilidad y terminaciones deben confirmarse con el taller.');
-          back();
-        });
-
-        btn('Plazos de entrega', () => {
-          clear();
-          say('Los plazos dependen del diseño y la carga de trabajo. Un trabajador debe confirmarlos.');
-          back();
-        });
-
-        btn('¿El precio es definitivo?', () => {
-          clear();
-          say('No. Las precotizaciones son estimaciones de demostración y deben validarse antes de confirmar un pedido.');
-          back();
-        });
-
-        back();
+      function compatOut(p) {
+        if (p.type === 'text' || p.type === 'image') return ['okc', 'ya soportado en whatsapp.js'];
+        if (p.type === 'location') return ['new', 'propuesta: agregar sendLocation()'];
+        const t = p.interactive.type;
+        if (t === 'button') return p.interactive.header ? ['new', 'propuesta: sendButtons con header de imagen'] : ['okc', 'ya soportado en whatsapp.js'];
+        if (t === 'list') return ['new', 'propuesta: agregar sendList()'];
+        if (t === 'flow') return ['new', 'propuesta: agregar sendFlow() y publicar el Flow en Meta'];
+        return ['okc', ''];
+      }
+      function compatIn(m) {
+        const t = m.interactive?.type;
+        if (t === 'nfm_reply') return ['new', 'propuesta: storage.js hoy deja input vacío para nfm_reply'];
+        if (t === 'list_reply') return ['okc', 'storage.js ya lee list_reply.id'];
+        return ['okc', 'ya soportado'];
       }
 
-      function locationInfo() {
-        step = 'location';
-        clear();
-        say('Este prototipo está pensado para una mueblería de Temuco. La dirección y los horarios reales aún no se han configurado.');
-        back();
+      // ---------- Panel: eventos, API y pestañas ----------
+      const logEl = $('#log'), apiEl = $('#api');
+      function log(text, kind = '') {
+        const li = document.createElement('li'); li.className = kind; li.textContent = `${timeNow()} ${text}`;
+        logEl.appendChild(li); logEl.scrollTop = logEl.scrollHeight;
+      }
+      function logApi(dir, payload, status, note, compat) {
+        const d = document.createElement('details');
+        const s = document.createElement('summary');
+        const type = payload.type ?? payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.type;
+        const inner = dir === 'in' ? payload.entry[0].changes[0].value.messages[0] : payload;
+        const sub = inner.interactive?.type ?? inner.type;
+        s.innerHTML = `<span class="badge ${dir}">${dir === 'in' ? '← Webhook' : '→ POST /messages'}</span><b>${esc(sub ?? type)}</b>`;
+        if (status === 'err') s.innerHTML += '<span class="badge bad">rechazado</span>';
+        else if (compat) s.innerHTML += `<span class="badge ${compat[0]}">${esc(compat[1])}</span>`;
+        const pre = document.createElement('pre');
+        pre.textContent = (note ? `// ${note}\n` : '') + JSON.stringify(payload, null, 2);
+        d.append(s, pre); apiEl.prepend(d);
+        while (apiEl.children.length > 40) apiEl.lastChild.remove();
+      }
+      document.querySelectorAll('[data-tab]').forEach((tab) => tab.addEventListener('click', () => {
+        document.querySelectorAll('[data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+        document.querySelectorAll('.tab').forEach((p) => { p.hidden = p.id !== `tab-${tab.dataset.tab}`; });
+      }));
+      function renderState() {
+        $('#state').textContent = JSON.stringify({ step: session.step, field: session.field, quote: session.quote, versión: $('#modeSel').value, QUOTES_ENABLED: quotesEnabled() }, null, 2);
+      }
+      const advisorEl = $('#advisor'), advisorEmptyEl = $('#advisorEmpty');
+      function notifyAdvisor(text) {
+        const li = document.createElement('li'); li.textContent = `${timeNow()}\n${text}`;
+        advisorEl.prepend(li); advisorEmptyEl.hidden = true;
+        log('Notificación enviada al asesor (HUMAN_PHONE_NUMBER)', 'ok');
       }
 
-      function human(reason = '') {
-        step = 'human';
-        clear();
-        say(`${reason ? `${reason}\n\n` : ''}Derivación a un asesor humano solicitada. Esta demostración no está conectada a WhatsApp ni a un sistema de atención; puedes registrar la solicitud simulada aquí.`);
+      // ---------- Teléfono: renderizado ----------
+      const scrollDown = () => { chatEl.scrollTop = chatEl.scrollHeight; };
+      const setTyping = (on) => { $('#presence').textContent = on ? 'escribiendo…' : 'en línea'; };
+      function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+      const metaHtml = (out) => `<span class="meta">${timeNow()}${out ? ' <span class="ticks">✓</span>' : ''}</span>`;
 
-        btn('Registrar solicitud simulada', () => {
-          clear();
-          say('Solicitud simulada registrada en esta conversación. En producción, este paso debe enviar el caso y sus medidas al equipo de atención.');
-          back();
-        });
-
-        back();
+      function addCustomer(preview) {
+        const wrap = el('div', 'msg out'); const b = el('div', 'bubble', `${fmt(preview)}${metaHtml(true)}`);
+        wrap.appendChild(b); chatEl.appendChild(wrap); scrollDown();
+        return b.querySelector('.ticks');
+      }
+      function setTick(tick, state) {
+        tick.textContent = state === 'sent' ? '✓' : '✓✓'; tick.classList.toggle('read', state === 'read');
       }
 
-      function quote() {
-        selectedProduct = null;
-        showProductOptions();
-      }
-
-      function showDimensions(message = 'Paso 2 de 3 · Ingresa las medidas y adicionales. El largo debe ser de hasta 3,66 m para una precotización automática.') {
-        step = 'dimensions';
-        clear();
-        say(message);
-        const form = document.createElement('form');
-        form.className = 'form';
-        form.innerHTML = `
-          <label>
-            Largo de cubierta (m)
-            <input class="field" name="meters" type="number" min="0.01" step="0.01" required placeholder="Ej.: 2,40" />
-          </label>
-          <label>Cantidad de cortes a 45°
-            <input class="field" name="cuts45" type="number" min="0" step="1" value="0" required />
-          </label>
-          <label>Cantidad de pegados de cenefa
-            <input class="field" name="edgeband" type="number" min="0" step="1" value="0" required />
-          </label>
-          <label>Cantidad de perforaciones
-            <input class="field" name="perforations" type="number" min="0" step="1" value="0" required />
-          </label>
-          <span class="hint">Precios referenciales ficticios para demostración. El taller debe confirmar disponibilidad, medidas y precio final.</span>
-          <button class="primary" type="submit">Paso 3 · Calcular precotización</button>
-        `;
-
-        form.onsubmit = (e) => {
-          e.preventDefault();
-          const formData = new FormData(form);
-          const meters = Number(formData.get('meters'));
-          const cuts45 = Number(formData.get('cuts45'));
-          const edgeband = Number(formData.get('edgeband'));
-          const perforations = Number(formData.get('perforations'));
-
-          if (meters > MAX_AUTOMATIC_METERS) {
-            human(`La medida ingresada (${meters} m) supera el máximo automático de ${MAX_AUTOMATIC_METERS} m. Un asesor debe revisar este pedido especial.`);
-            return;
-          }
-
-          try {
-            const result = calculateQuote(selectedProduct, meters, cuts45, perforations, edgeband);
-            say(`${meters} m · ${cuts45} corte(s) a 45° · ${edgeband} pegado(s) de cenefa · ${perforations} perforación(es)`, 'me');
-            showQuote(result);
-          } catch (error) {
-            if (!(error instanceof RangeError || error instanceof TypeError)) {
-              throw error;
+      function renderOut(p) {
+        const wrap = el('div', 'msg in'); let pills = null;
+        if (p.type === 'text') {
+          wrap.appendChild(el('div', 'bubble', `${fmt(p.text.body)}${metaHtml()}`));
+        } else if (p.type === 'image') {
+          const b = el('div', 'bubble media', `<img alt="Foto del producto" src="${imgSrc(p.image.link)}" />${p.image.caption ? `<div class="cap">${fmt(p.image.caption)}${metaHtml()}</div>` : ''}`);
+          wrap.appendChild(b);
+        } else if (p.type === 'location') {
+          const l = p.location;
+          wrap.appendChild(el('div', 'bubble media loc', `${mapSvg}<div class="info"><b>${esc(l.name)}</b><br>${esc(l.address)}${metaHtml()}</div>`));
+        } else {
+          const i = p.interactive;
+          let html = '';
+          if (i.header?.type === 'image') html += `<div class="hdr"><img alt="Foto del producto" src="${imgSrc(i.header.image.link)}" /></div>`;
+          if (i.header?.type === 'text') html += `<b>${esc(i.header.text)}</b><br>`;
+          html += fmt(i.body.text);
+          if (i.footer) html += `<div class="foot">${esc(i.footer.text)}</div>`;
+          wrap.appendChild(el('div', 'bubble', html + metaHtml()));
+          pills = el('div', 'pills');
+          if (i.type === 'button') {
+            for (const { reply } of i.action.buttons) {
+              const btn = el('button'); btn.type = 'button'; btn.textContent = reply.title;
+              btn.addEventListener('click', () => enqueue({ type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: reply.id, title: reply.title } } }, reply.title));
+              pills.appendChild(btn);
             }
-            showDimensions(`No se pudo calcular: ${error.message}\n\nCorrige los datos para continuar.`);
+          } else if (i.type === 'list') {
+            const btn = el('button'); btn.type = 'button'; btn.textContent = `☰ ${i.action.button}`;
+            btn.addEventListener('click', () => openList(i)); pills.appendChild(btn);
+          } else if (i.type === 'flow') {
+            const btn = el('button'); btn.type = 'button'; btn.textContent = `📋 ${i.action.parameters.flow_cta}`;
+            btn.addEventListener('click', () => openFlow(i)); pills.appendChild(btn);
           }
-        };
-
-        actions.appendChild(form);
-        back();
-      }
-
-      function showQuote(result) {
-        step = 'quote';
-        clear();
-        const lineSummary = result.lines
-          .map((line) => `${line.description}: ${money(line.total)}`)
-          .join('\n');
-        say(
-          `Paso 3 de 3 · Precotización referencial\n${result.product.name}\n\n` +
-            `${lineSummary}\n\nTOTAL: ${money(result.total)} CLP\n\n` +
-            `Validez: ${result.validForDays} días desde hoy. Valores ficticios de demostración; no constituye una cotización definitiva.`
-        );
-        btn('👤 Consultar con un asesor', () => human('El cliente solicita validar esta precotización.'));
-        btn('🧮 Nueva precotización', quote);
-        back();
-      }
-
-      function menuWithError() {
-        menu();
-        say('Opción no válida. Usa los botones o escribe 1 para catálogo, 2 para precotizar, 3 para preguntas frecuentes o /asesor.');
-      }
-
-      function handleMessage(rawMessage) {
-        const message = rawMessage.trim();
-        const normalized = message.toLocaleLowerCase('es-CL');
-        if (!message) return;
-        say(message, 'me');
-
-        if (['/asesor', '/humano', 'asesor', 'asesor humano', 'humano'].includes(normalized)) {
-          human();
-          return;
+          wrap.appendChild(pills);
         }
+        chatEl.appendChild(wrap); scrollDown();
+      }
 
-        if (normalized.includes('laboratorio')) {
-          human('Los mesones de laboratorio requieren revisión personalizada por un asesor.');
-          return;
+      // ---------- Hojas inferiores: lista y Flow ----------
+      const backdrop = $('#sheetBackdrop'), sheet = $('#sheet');
+      function closeSheet() { backdrop.hidden = true; sheet.replaceChildren(); }
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeSheet(); });
+      function sheetHeader(title) {
+        const h = el('header', null, `<strong>${esc(title)}</strong>`); const x = el('button'); x.type = 'button'; x.setAttribute('aria-label', 'Cerrar'); x.textContent = '✕'; x.addEventListener('click', closeSheet); h.appendChild(x); return h;
+      }
+      function openList(i) {
+        sheet.replaceChildren(sheetHeader(i.action.button)); let chosen = null;
+        const send = el('button', 'cta'); send.type = 'button'; send.textContent = 'Enviar'; send.disabled = true;
+        for (const section of i.action.sections) {
+          if (section.title) sheet.appendChild(el('p', 'sec', esc(section.title)));
+          for (const r of section.rows) {
+            const row = el('label', 'row', `<input type="radio" name="opt" /><span><div class="t">${esc(r.title)}</div>${r.description ? `<div class="d">${esc(r.description)}</div>` : ''}</span>`);
+            row.querySelector('input').addEventListener('change', () => { chosen = r; send.disabled = false; });
+            sheet.appendChild(row);
+          }
         }
+        send.addEventListener('click', () => { closeSheet(); enqueue({ type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: chosen.id, title: chosen.title, ...(chosen.description ? { description: chosen.description } : {}) } } }, chosen.title); });
+        sheet.appendChild(send); backdrop.hidden = false;
+      }
+      const FLOW_FIELDS = `
+        <label>Largo de la cubierta (m)<input name="largo" type="number" step="0.01" min="0.01" required placeholder="Ej.: 2,40" /></label>
+        <label>Ancho (cm)<input name="ancho" type="number" step="1" min="1" value="60" required /><small>Informativo: hoy el precio se calcula por metro lineal.</small></label>
+        <label>Cortes a 45° (lavaplatos, encimera)<select name="cortes45">${[0,1,2,3,4,5].map((n) => `<option>${n}</option>`).join('')}</select></label>
+        <label>Pegados de cenefa<select name="cenefa">${[0,1,2,3,4,5].map((n) => `<option>${n}</option>`).join('')}</select></label>
+        <label>Perforaciones<select name="perforaciones">${[0,1,2,3,4].map((n) => `<option>${n}</option>`).join('')}</select></label>`;
+      function openFlow(i) {
+        sheet.replaceChildren(sheetHeader('Medidas de tu cubierta'));
+        const form = el('form', 'flow', FLOW_FIELDS + '<button class="cta" type="submit">Continuar</button>');
+        form.addEventListener('submit', (e) => {
+          e.preventDefault(); const d = Object.fromEntries(new FormData(form)); closeSheet();
+          submitFlow({ ...d, flow_token: i.action.parameters.flow_token });
+        });
+        sheet.appendChild(form); backdrop.hidden = false;
+      }
+      function submitFlow(values) {
+        const v = { flow_token: 'ft_demo', ...values };
+        const preview = `📋 *Medidas enviadas*\nLargo: ${fmtNum(v.largo)} m · Ancho: ${v.ancho} cm\nCortes a 45°: ${v.cortes45}\nPegado de cenefa: ${v.cenefa}\nPerforaciones: ${v.perforaciones}`;
+        return enqueue({ type: 'interactive', interactive: { type: 'nfm_reply', nfm_reply: { name: 'flow', body: 'Sent', response_json: JSON.stringify(v) } } }, preview);
+      }
 
-        if (step === 'menu') {
-          if (normalized === '1' || normalized.includes('catálogo') || normalized.includes('catalogo')) {
-            catalog();
-          } else if (normalized === '2' || normalized.includes('precotiz')) {
-            quote();
-          } else if (normalized === '3' || normalized.includes('pregunta')) {
-            faq();
+      // ---------- Envío saliente (bot y asesor) ----------
+      let outSeq = 0;
+      async function deliver(p, { human = false } = {}) {
+        const full = { messaging_product: 'whatsapp', recipient_type: 'individual', to: CUSTOMER, ...p };
+        const problem = validate(full);
+        if (problem) {
+          logApi('out', full, 'err', `Meta respondería 400 (parámetro inválido): ${problem}`);
+          log(`Mensaje rechazado: ${problem}`, 'err'); throw new Error(problem);
+        }
+        setTyping(true); await sleep(450 + Math.min(900, JSON.stringify(p).length * 1.2)); setTyping(false);
+        renderOut(full);
+        logApi('out', full, 'ok', `${human ? 'Enviado por el asesor, no por el bot · ' : ''}200 OK · wamid.OUT${pad(++outSeq)}`, compatOut(full));
+      }
+      const send = {
+        text: (body) => deliver(msg.text(body)),
+        image: (link, caption) => deliver(msg.image(link, caption)),
+        buttons: (body, buttons, opts) => deliver(msg.buttons(body, buttons, opts)),
+        list: (body, button, sections, opts) => deliver(msg.list(body, button, sections, opts)),
+        location: (...a) => deliver(msg.location(...a)),
+        flow: (...a) => deliver(msg.flow(...a)),
+      };
+
+      // ---------- Lógica del bot ----------
+      let session = { step: 'menu' };
+      const FIELD_PROMPTS = {
+        meters: '¿Cuántos metros lineales necesitas? Escribe, por ejemplo, 2,40.',
+        cuts45: '¿Cuántos cortes a 45° necesitas? Escribe un número entero.',
+        edgeBanding: '¿Cuántos pegados de cenefa necesitas? Escribe un número entero.',
+        perforations: '¿Cuántas perforaciones necesitas? Escribe un número entero.',
+      };
+      const FIELD_ORDER = ['meters', 'cuts45', 'edgeBanding', 'perforations'];
+      const mainMenuButtons = [{ id: 'menu:quote', title: 'Cotizar' }, { id: 'menu:catalog', title: 'Ver catálogo' }, { id: 'menu:human', title: 'Hablar con asesor' }];
+      const afterInfoButtons = [{ id: 'menu:quote', title: 'Cotizar' }, { id: 'menu:human', title: 'Hablar con asesor' }, { id: 'menu:home', title: 'Menú principal' }];
+      const priceText = (p) => (quotesEnabled() ? `${clp(p.pricePerMeter)} CLP/m` : 'precio con asesor');
+
+      async function showMenu(text) {
+        session.step = 'menu';
+        if (!proposal()) return send.buttons(text ?? '¡Hola! ¿En qué podemos ayudarte?', mainMenuButtons);
+        return send.list(text ?? '¡Hola! Soy tu asistente virtual de Cubiertas Postformadas Temuco. ¿Qué necesitas hoy?', 'Ver opciones', [{ title: 'Atención', rows: [
+          { id: 'menu:quote', title: 'Cotizar', description: 'Calcula una precotización en minutos' },
+          { id: 'menu:catalog', title: 'Ver catálogo', description: 'Materiales y terminaciones disponibles' },
+          { id: 'menu:measures', title: 'Cómo medir', description: 'Guía de medidas, cortes y perforaciones' },
+          { id: 'menu:location', title: 'Ubicación', description: 'Dónde estamos y horarios' },
+          { id: 'menu:faq', title: 'Preguntas frecuentes', description: 'Materiales, plazos y precios' },
+          { id: 'menu:human', title: 'Hablar con asesor', description: 'Atención personalizada' },
+        ] }], { header: 'Asistente virtual', footer: 'Atención automática 24/7' });
+      }
+
+      async function startQuote() {
+        if (!quotesEnabled()) {
+          session.step = 'menu';
+          return send.buttons('Las precotizaciones automáticas están temporalmente desactivadas mientras el taller confirma sus precios. Puedes consultar con un asesor.', [{ id: 'menu:human', title: 'Hablar con asesor' }, { id: 'menu:catalog', title: 'Ver catálogo' }, { id: 'menu:home', title: 'Menú principal' }]);
+        }
+        session.step = 'material'; session.quote = {}; delete session.field;
+        const list = products();
+        if (proposal()) {
+          return send.list('Paso 1 de 3 · Elige el tipo de cubierta y terminación.', 'Ver terminaciones', [{ title: 'Terminaciones', rows: list.map((p) => ({ id: `product:${p.id}`, title: p.finish, description: `${p.material} · ${money(p.pricePerMeter)}/m` })) }], { footer: 'Precios referenciales' });
+        }
+        return send.buttons(`Paso 1 de 3 · Elige el tipo de cubierta y terminación:\n\n${list.map((p, i) => `${i + 1}. ${p.finish} · ${money(p.pricePerMeter)}/m`).join('\n')}`, list.map((p) => ({ id: `product:${p.id}`, title: p.finish })));
+      }
+
+      async function showCatalog() {
+        session.step = 'menu';
+        const list = products();
+        if (!proposal()) {
+          await send.text(list.map((p, i) => `${i + 1}. ${p.name} — ${p.finish}${quotesEnabled() ? ` — ${clp(p.pricePerMeter)} CLP/m` : ''}\n${p.technicalSheet}`).join('\n\n'));
+          return send.buttons('¿Quieres iniciar una precotización?', afterInfoButtons);
+        }
+        await send.text('*Catálogo de cubiertas*\nMDF con laminado decorativo. Estas son nuestras terminaciones:');
+        for (const p of list) await send.image(imgLink(p), `*${p.finish}*\n${p.name}\nMaterial: ${p.material}${quotesEnabled() ? `\nPrecio referencial: ${clp(p.pricePerMeter)} CLP/m` : ''}\n_${p.technicalSheet}_`);
+        return send.list('¿Cuál te interesa? Elígela para ver su ficha y cotizar.', 'Elegir terminación', [
+          { title: 'Terminaciones', rows: list.map((p) => ({ id: `product:${p.id}`, title: p.finish, description: `${p.material}${quotesEnabled() ? ` · ${money(p.pricePerMeter)}/m` : ''}` })) },
+          { title: 'Más opciones', rows: [{ id: 'menu:home', title: 'Menú principal' }] },
+        ]);
+      }
+
+      async function sendFlowPrompt(prefix = '') {
+        session.step = 'dimensions'; session.field = 'flow';
+        return send.flow(`${prefix}Paso 2 de 3 · Indica largo, ancho y si necesitas cortes o perforaciones.\nPara una precotización automática el largo debe ser de hasta ${fmtNum(MAX_AUTOMATIC_METERS)} m.`, 'Ingresar medidas', 'Precios referenciales');
+      }
+
+      async function selectProduct(product) {
+        session.quote = { productId: product.id };
+        const ficha = `*${product.name}*\nMaterial: ${product.material}\nTerminación: ${product.finish}\nPrecio referencial: ${clp(product.pricePerMeter)} CLP/m\n_${product.technicalSheet}_`;
+        if (proposal()) await send.image(imgLink(product), ficha);
+        else await send.text(`${product.name}\nMaterial: ${product.material}\nTerminación: ${product.finish}\nPrecio referencial: ${clp(product.pricePerMeter)} CLP/m\n${product.technicalSheet}`);
+        if (useFlow()) return sendFlowPrompt();
+        session.step = 'dimensions'; session.field = 'meters';
+        return send.text(`Paso 2 de 3\n${FIELD_PROMPTS.meters}`);
+      }
+
+      async function requestHuman(reason) {
+        const q = session.quote ?? {};
+        const pedido = q.productId && q.meters ? `\nPedido: ${getProduct(q.productId)?.finish ?? q.productId} · ${fmtNum(q.meters)} m · ${q.cuts45 ?? 0} corte(s) · ${q.edgeBanding ?? 0} cenefa(s) · ${q.perforations ?? 0} perforación(es)` : '';
+        session.step = 'human';
+        notifyAdvisor(`Solicitud de asesor desde WhatsApp\nCliente: +${CUSTOMER} (demo)\nMotivo: ${reason}${pedido}`);
+        await send.text(proposal() ? 'Tu solicitud requiere una revisión especial. Un asesor continuará tu atención.' : 'Tu solicitud fue enviada a un asesor. Te contactaremos para revisar el pedido.');
+      }
+
+      function parseNumber(text) {
+        const n = String(text).trim().replace(',', '.');
+        if (!/^\d+(?:\.\d+)?$/.test(n)) return null;
+        return Number(n);
+      }
+
+      async function finishQuote() {
+        const q = session.quote;
+        const product = getProduct(q.productId);
+        const quote = calculateQuote(product, q.meters, q.cuts45, q.perforations, q.edgeBanding);
+        session.step = 'quote';
+        const buttons = [{ id: 'menu:human', title: 'Validar con asesor' }, { id: 'menu:quote', title: 'Nueva cotización' }, { id: 'menu:home', title: 'Menú principal' }];
+        if (proposal()) {
+          return send.buttons(formatQuote(quote, { width: q.width, meters: q.meters }), buttons, { header: { type: 'image', image: { link: imgLink(product) } }, footer: `Precio referencial · válida ${QUOTE_VALIDITY_DAYS} días` });
+        }
+        await send.text(`Paso 3 de 3\n\n${formatQuote(quote)}`);
+        return send.buttons('¿Qué deseas hacer ahora?', buttons);
+      }
+
+      async function processDimensions(text) {
+        if (!quotesEnabled()) return startQuote();
+        const field = session.field; const value = parseNumber(text);
+        if (value === null || (field !== 'meters' && !Number.isInteger(value))) {
+          return send.text(field === 'meters' ? 'Ingresa una medida válida mayor que cero, por ejemplo 2,40.' : 'Ingresa una cantidad como número entero igual o mayor que cero.');
+        }
+        if (field === 'meters' && value <= 0) return send.text('La medida debe ser mayor que cero. Escribe, por ejemplo, 2,40.');
+        if (field === 'meters' && value > MAX_AUTOMATIC_METERS) return requestHuman(`medida de ${fmtNum(value)} m supera el máximo automático de ${fmtNum(MAX_AUTOMATIC_METERS)} m`);
+        session.quote[field] = value;
+        const next = FIELD_ORDER[FIELD_ORDER.indexOf(field) + 1];
+        if (next) { session.field = next; return send.text(FIELD_PROMPTS[next]); }
+        return finishQuote();
+      }
+
+      async function handleFlowResponse(data) {
+        if (!quotesEnabled()) return startQuote();
+        const meters = parseNumber(data.largo); const cuts = Number(data.cortes45); const edge = Number(data.cenefa); const perf = Number(data.perforaciones);
+        if (meters === null || meters <= 0 || ![cuts, edge, perf].every((n) => Number.isInteger(n) && n >= 0)) return sendFlowPrompt('No pude leer las medidas. ');
+        if (meters > MAX_AUTOMATIC_METERS) { session.quote.meters = meters; return requestHuman(`medida de ${fmtNum(meters)} m supera el máximo automático de ${fmtNum(MAX_AUTOMATIC_METERS)} m`); }
+        Object.assign(session.quote, { meters, cuts45: cuts, edgeBanding: edge, perforations: perf, width: data.ancho });
+        return finishQuote();
+      }
+
+      const FAQ = {
+        'faq:materials': 'Podemos orientar sobre melamina y MDF. La disponibilidad y terminaciones deben confirmarse con el taller.',
+        'faq:lead': 'Los plazos dependen del diseño y la carga de trabajo. Un asesor debe confirmarlos.',
+        'faq:price': 'Los precios son referenciales. Disponibilidad, medidas y precio final deben confirmarse con el taller.',
+        'faq:size': `Las precotizaciones automáticas llegan hasta ${fmtNum(MAX_AUTOMATIC_METERS)} m de largo. Sobre esa medida un asesor revisa el pedido.`,
+      };
+      const faqList = () => send.list('Selecciona tu consulta:', 'Ver preguntas', [{ title: 'Preguntas frecuentes', rows: [
+        { id: 'faq:materials', title: 'Materiales' }, { id: 'faq:lead', title: 'Plazos de entrega' }, { id: 'faq:price', title: '¿Precio definitivo?' }, { id: 'faq:size', title: 'Medida máxima' },
+      ] }]);
+
+      async function handleChoice(input) {
+        const n = input.toLocaleLowerCase('es-CL');
+        if (['/asesor', '/humano', 'asesor', 'asesor humano', 'humano', 'menu:human'].includes(n)) return requestHuman('el cliente solicitó atención humana');
+        if (input === 'menu:home') return showMenu();
+        if (input === 'menu:catalog') return showCatalog();
+        if (input === 'menu:quote') return startQuote();
+        if (proposal() && input === 'menu:measures') {
+          await send.text('*Cómo medir tu cubierta*\n• Largo: mide en línea recta el borde más largo, en metros (ej. 2,40).\n• Cortes a 45°: uniones en esquina o en L.\n• Pegado de cenefa: cada borde que necesite terminación.\n• Perforaciones: lavaplatos, encimera u otros calados.\n\nSi el largo supera 3,66 m, un asesor revisará tu pedido.');
+          return showMenu('¿Necesitas algo más?');
+        }
+        if (proposal() && input === 'menu:location') {
+          await send.location(-38.7397, -72.5984, 'Cubiertas Postformadas Temuco', 'Dirección por configurar · Temuco, Araucanía');
+          await send.text('Horario de atención: por configurar con el taller.');
+          return showMenu('¿Necesitas algo más?');
+        }
+        if (proposal() && input === 'menu:faq') return faqList();
+        if (input === 'faq:price' || (proposal() && FAQ[input])) {
+          await send.text(FAQ[input]);
+          return proposal() ? showMenu('¿Necesitas algo más?') : send.buttons('¿Necesitas algo más?', mainMenuButtons);
+        }
+        if (input.startsWith('product:')) {
+          const product = quotesEnabled() ? getProduct(input.slice(8)) : null;
+          return product ? selectProduct(product) : startQuote();
+        }
+        if (n.includes('laboratorio')) return requestHuman('mesón de laboratorio requiere revisión personalizada');
+        if (session.step === 'material') { const p = products()[Number(input) - 1]; if (p && quotesEnabled()) return selectProduct(p); }
+        if (session.step === 'dimensions') return session.field === 'flow' ? sendFlowPrompt('Usa el formulario para ingresar las medidas.\n\n') : processDimensions(input);
+        if (proposal()) return showMenu('No reconocí esa opción. Elige una de la lista o escribe /asesor para hablar con una persona.');
+        return send.buttons('No reconocí esa opción. Usa un botón o escribe /asesor para solicitar ayuda humana.', mainMenuButtons);
+      }
+
+      async function handleIncoming(message) {
+        const i = message.type === 'interactive' ? message.interactive : null;
+        if (proposal() && session.step === 'human') { log('Conversación asignada a un asesor: el bot no responde', 'warn'); return; }
+        if (i?.type === 'nfm_reply') return handleFlowResponse(JSON.parse(i.nfm_reply.response_json));
+        const input = message.type === 'text' ? message.text.body ?? '' : i?.button_reply?.id ?? i?.list_reply?.id ?? '';
+        const text = input.trim();
+        if (!text) return send.text('No recibí texto. Usa una opción del menú o escribe /asesor.');
+        if (/^(hola|holi|buenas|buen[oa]s( d[ií]as| tardes| noches)?|menu|menú|inicio)$/i.test(text)) return showMenu();
+        if (session.step === 'menu' && !text.startsWith('menu:') && !text.startsWith('product:') && !text.startsWith('faq:')) {
+          const c = text.toLocaleLowerCase('es-CL');
+          if (proposal()) {
+            const map = [['1', 'menu:quote'], ['2', 'menu:catalog'], ['3', 'menu:measures'], ['4', 'menu:location'], ['5', 'menu:faq'], ['6', 'menu:human']];
+            const hit = map.find(([k]) => c === k)?.[1]
+              ?? (c.includes('cotiz') ? 'menu:quote' : c.includes('cat') ? 'menu:catalog' : c.includes('medi') ? 'menu:measures' : /ubicaci|d[oó]nde|direcci/.test(c) ? 'menu:location' : c.includes('pregunta') ? 'menu:faq' : null);
+            if (hit) return handleChoice(hit);
           } else {
-            menuWithError();
+            if (c === '1' || c.includes('cotiz')) return startQuote();
+            if (c === '2' || c.includes('catálogo') || c.includes('catalogo')) return showCatalog();
+            if (c === '3' || c.includes('pregunta')) {
+              await send.text('Precios referenciales sujetos a confirmación. Los plazos dependen del diseño y la carga del taller. Para materiales, disponibilidad y medidas especiales, consulta con un asesor.');
+              return send.buttons('¿Necesitas algo más?', mainMenuButtons);
+            }
           }
-          return;
         }
-
-        if (step === 'material') {
-          const index = Number(message) - 1;
-          const product = catalogProducts.find((item) => item.id === normalized) || catalogProducts[index] ||
-            catalogProducts.find((item) => item.name.toLocaleLowerCase('es-CL') === normalized);
-          if (!product) {
-            showProductOptions('Opción inválida. Elige una de las terminaciones disponibles (1, 2 o 3):');
-            return;
-          }
-          selectedProduct = product;
-          say(`${product.name} · Material: ${product.material} · Terminación: ${product.finish}`);
-          showDimensions();
-          return;
-        }
-
-        if (step === 'dimensions') {
-          showDimensions('Para medidas y adicionales, completa el formulario. Puedes escribir /asesor para solicitar ayuda humana.');
-          return;
-        }
-
-        if (step === 'human') {
-          say('La solicitud de atención humana está seleccionada. Usa el botón para registrar la solicitud simulada.');
-          return;
-        }
-
-        menuWithError();
+        return handleChoice(text);
       }
 
-      chatForm.onsubmit = (event) => {
-        event.preventDefault();
-        const message = chatInput.value;
-        chatInput.value = '';
-        handleMessage(message);
-      };
+      // ---------- Webhook simulado y cola secuencial ----------
+      let chain = Promise.resolve(), inSeq = 0, lastEvent = null;
+      const seen = new Set();
+      function webhookPayload(m) {
+        return { object: 'whatsapp_business_account', entry: [{ id: 'WABA_ID', changes: [{ field: 'messages', value: { messaging_product: 'whatsapp', metadata: { display_phone_number: '56900000000', phone_number_id: 'PHONE_NUMBER_ID' }, contacts: [{ profile: { name: 'Cliente demo' }, wa_id: CUSTOMER }], messages: [m] } }] }] };
+      }
+      async function sign(text) {
+        try {
+          const enc = new TextEncoder();
+          const key = await crypto.subtle.importKey('raw', enc.encode('app-secret-de-ejemplo'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+          return [...new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(text)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+        } catch { return null; }
+      }
+      function enqueue(message, preview) {
+        const previewText = preview ?? message.text?.body ?? '';
+        chain = chain.then(() => receive(message, previewText)).catch((e) => log(`Error inesperado: ${e.message}`, 'err'));
+        return chain;
+      }
+      async function receive(message, preview) {
+        const id = `wamid.SIM${pad(++inSeq)}`;
+        const full = { from: CUSTOMER, id, timestamp: String(Math.floor(Date.now() / 1000)), ...message };
+        const tick = addCustomer(preview);
+        const payload = webhookPayload(full);
+        const sig = await sign(JSON.stringify(payload));
+        lastEvent = { id, payload, sig };
+        logApi('in', payload, 'ok', `X-Hub-Signature-256: sha256=${sig ? sig.slice(0, 24) + '…' : '(no disponible en este navegador)'}`, compatIn(full));
+        log(`POST /webhook · firma HMAC válida · ${id}`, 'ok');
+        seen.add(id); log(`Evento ${id} guardado en la cola (pending)`);
+        await sleep(250); setTick(tick, 'delivered');
+        log(`Worker toma ${id} (processing)`);
+        await sleep(350); setTick(tick, 'read');
+        try { await handleIncoming(full); log(`${id} procesado (processed)`, 'ok'); }
+        catch (e) { log(`${id} falló: ${e.message} · reintento con backoff`, 'err'); }
+        renderState();
+      }
 
-      document.querySelector('#restart').onclick = () => {
-        messages.replaceChildren();
-        selectedProduct = null;
-        menu();
+      // ---------- Escenarios, controles y asesor ----------
+      const T = (t) => enqueue(msg.text(t));
+      const L = (id, title, description) => enqueue({ type: 'interactive', interactive: { type: 'list_reply', list_reply: { id, title, ...(description ? { description } : {}) } } }, title);
+      const B = (id, title) => enqueue({ type: 'interactive', interactive: { type: 'button_reply', button_reply: { id, title } } }, title);
+      const pick = (id, title) => (proposal() ? L(id, title) : B(id, title));
+      const scenarios = {
+        quote: () => { pick('menu:quote', 'Cotizar'); pick('product:mdf-blanco', 'Blanco liso'); if (useFlow()) submitFlow({ largo: '2.4', ancho: '60', cortes45: '1', cenefa: '2', perforaciones: '1' }); else ['2,4', '1', '2', '1'].forEach(T); },
+        special: () => { pick('menu:quote', 'Cotizar'); pick('product:mdf-madera', 'Textura madera'); if (useFlow()) submitFlow({ largo: '4.2', ancho: '60', cortes45: '0', cenefa: '0', perforaciones: '1' }); else T('4'); },
+        lab: () => T('Necesito un mesón de laboratorio'),
+        catalog: () => L('menu:catalog', 'Ver catálogo'),
+        measures: () => L('menu:measures', 'Cómo medir'),
+        location: () => L('menu:location', 'Ubicación'),
+        faq: () => { L('menu:faq', 'Preguntas frecuentes'); L('faq:lead', 'Plazos de entrega'); },
       };
+      document.querySelectorAll('[data-scenario]').forEach((c) => c.addEventListener('click', () => scenarios[c.dataset.scenario]()));
+      $('#dupBtn').addEventListener('click', () => {
+        if (!lastEvent) return log('Todavía no hay mensajes para duplicar.', 'warn');
+        log(`POST /webhook · Meta reenvía ${lastEvent.id}`, 'warn');
+        log(`Duplicado ignorado: el ID ${lastEvent.id} ya existe en el almacenamiento`, 'ok');
+      });
+      $('#quotesToggle').addEventListener('change', () => { log(`QUOTES_ENABLED=${quotesEnabled()} (en Render se cambia y se vuelve a desplegar)`, 'warn'); renderState(); });
+      $('#flowToggle').addEventListener('change', renderState);
+      function syncMode() {
+        const p = proposal();
+        document.querySelectorAll('[data-prop]').forEach((c) => { c.hidden = !p; });
+        $('#flowRow').style.opacity = p ? '1' : '.5'; $('#flowToggle').disabled = !p;
+      }
+      $('#modeSel').addEventListener('change', () => { syncMode(); reset(); });
 
-      menu();
+      $('#advisorForm').addEventListener('submit', (e) => {
+        e.preventDefault(); const t = $('#advisorInput').value.trim(); $('#advisorInput').value = '';
+        if (t) chain = chain.then(() => deliver(msg.text(t), { human: true })).catch((err) => log(err.message, 'err'));
+      });
+      $('#returnBot').addEventListener('click', () => { session.step = 'menu'; log('El asesor devolvió la conversación al bot', 'ok'); renderState(); });
+
+      const input = $('#chatInput'), sendBtn = $('#sendBtn');
+      input.addEventListener('input', () => { sendBtn.textContent = input.value.trim() ? '➤' : '🎙'; });
+      $('#chatForm').addEventListener('submit', (e) => {
+        e.preventDefault(); const t = input.value.trim(); input.value = ''; sendBtn.textContent = '🎙';
+        if (t) enqueue(msg.text(t));
+      });
+
+      function reset() {
+        chain = Promise.resolve(); inSeq = 0; outSeq = 0; lastEvent = null; seen.clear(); session = { step: 'menu' };
+        closeSheet(); chatEl.replaceChildren(); logEl.replaceChildren(); apiEl.replaceChildren(); advisorEl.replaceChildren(); advisorEmptyEl.hidden = false;
+        chatEl.append(el('div', 'chip-date', 'HOY'), el('div', 'chip-note', '🔒 Esta empresa usa un servicio seguro de Meta para administrar este chat.'));
+        setTyping(false); renderState(); enqueue(msg.text('Hola'));
+      }
+      $('#restart').addEventListener('click', reset);
+      syncMode(); reset();
     </script>
   </body>
 </html>
